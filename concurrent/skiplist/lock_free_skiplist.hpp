@@ -11,12 +11,21 @@ namespace sd{
     {
     private:
         typedef boost::shared_ptr<V> shared_ptr;
-
         
         struct node{
             V value;
-            node* next;
-
+            std::pair<node,bool>* next;
+            int top_level;
+            //constructor for sentinels
+            node(){
+                top_level = H;
+                value = NULL;
+                next = new std::pair<node,bool>[H];
+                
+                for(int i=0;i<H;i++){
+                    next[i] = new std::pair<node,bool>(NULL,false);
+                }
+            }
             
 
         };

@@ -1,6 +1,6 @@
 #include <boost/shared_ptr.hpp>
 #include <iostream>
-
+#include "lock_free_skiplist.hpp"
 
 int main(){
 
