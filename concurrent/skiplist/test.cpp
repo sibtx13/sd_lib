@@ -16,5 +16,9 @@ int main(){
     
     std::cout << swap << " " << *q.get() << std::endl;
 
+    sd::lock_free_skiplist<int,33> lfs;
+
+    lfs.add(5);
+
     return 0;
 }

@@ -2,7 +2,7 @@ CC=g++
 CFLAGS= -Wall -o
 SOURCES= test.cpp
 EXECUTABLE= skiplist
-INCFLAGS	=	-I /usr/local/boost_1_47_0 #-I/usr/local/include/thrift #-I/usr/local/zi_lib
+INCFLAGS	=	-I /usr/local/boost_1_49_0
 LINKFLAGS	=	-lpthread -ggdb -lrt
 
 .PHONY: all $(EXECUTABLE)
