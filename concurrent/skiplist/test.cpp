@@ -16,6 +16,20 @@ int main(){
     
     std::cout << swap << " " << *q.get() << std::endl;
 
+    std::pair<bool,bool>* i = new std::pair<bool,bool>(false,false);
+    std::pair<bool,bool>* j = new std::pair<bool,bool>(true,true);
+    
+
+    std::pair<bool,bool>** m = &i;
+
+    std::cout << (**m).first << std::endl;
+
+    swap = __sync_bool_compare_and_swap(m,i,j);
+
+    std::cout << swap << " " << (**m).first << std::endl;
+
+
+
     sd::lock_free_skiplist<int,33> lfs;
 
     lfs.add(5);

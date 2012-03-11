@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -Wall -o
+CFLAGS= -Wall -Werror -o
 SOURCES= test.cpp
 EXECUTABLE= skiplist
 INCFLAGS	=	-I /usr/local/boost_1_49_0
