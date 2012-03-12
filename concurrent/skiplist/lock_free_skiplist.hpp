@@ -60,9 +60,7 @@ namespace sd{
 
         //destructor
         ~node(){
-            //TODO check for memory leak, will have to delete entries separately
-            //if(next)
-            //    delete next;
+            
         }
 
     };
@@ -296,6 +294,7 @@ namespace sd{
                 curr = pred->next[level]->get(throwaway);
                 //traverse level
                 while(true){
+                    marked_ptr p = curr->next[level];
                     succ = curr->next[level]->get(marked);
                     while(marked){
                         //jump over marked nodes
