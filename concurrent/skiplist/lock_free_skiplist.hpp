@@ -11,13 +11,13 @@
 
 namespace sd{
 
-    template< typename V>
+    template< typename V , int H>
     class node
     {
     public:
         V value;
         //an array of atomic_markable nodes
-        atomic_markable_reference<node>* next;
+        boost::shared_ptr<atomic_markable_reference<node> > next[H];
         int top_level;
         boost::shared_ptr<node> null;
         //empty constructor for containers and shared_ptr
@@ -29,29 +29,30 @@ namespace sd{
         {
             top_level = height;
             //value = NULL;
-            next = new atomic_markable_reference<node>[top_level];
+            //next = new boost::shared_ptr<atomic_markable_reference<node> > [top_level];
                 
             for(int i=0;i<top_level;i++){
                 //null reference
                 //boost::shared_ptr<node> null(new node());
-                next[i] = atomic_markable_reference<node > (null,false);
+                next[i] = boost::shared_ptr<atomic_markable_reference<node> >(new atomic_markable_reference<node > (null,false));
             }
             
         }
          
         //constructor for inner nodes
-        node(V val , int height)
+        node(V val , int height):
+            null(new node())
         {
             value = val;
             top_level = height;
             //TODO might want to make sure that height is less than H
-            next = new atomic_markable_reference<node>[top_level];
-                
+            //next = new boost::shared_ptr<atomic_markable_reference<node> > [top_level];
             for(int i=0;i<top_level;i++){
                     
                 //null reference
-                boost::shared_ptr<node> null;
-                next[i] =  atomic_markable_reference<node > (null,false);
+                //boost::shared_ptr<node> null;
+                //next[i] =  atomic_markable_reference<node > (null,false);
+                next[i] = boost::shared_ptr<atomic_markable_reference<node> >(new atomic_markable_reference<node > (null,false));
             }
 		
 
@@ -60,8 +61,8 @@ namespace sd{
         //destructor
         ~node(){
             //TODO check for memory leak, will have to delete entries separately
-            if(next)
-                delete next;
+            //if(next)
+            //    delete next;
         }
 
     };
@@ -76,10 +77,11 @@ namespace sd{
     {
     private:
         
-        typedef typename sd::node<V> node_t;
+        typedef typename sd::node<V,H> node_t;
 	typedef  atomic_markable_reference<node_t> marked_node;
 	typedef typename boost::shared_ptr<node_t> shared_ptr;
         typedef typename marked_node::ref_pair ref_pair;
+        typedef typename boost::shared_ptr<marked_node> marked_ptr;
 
 	shared_ptr head,tail;
 	//the probability of a node existing at level 1 (squared for level 2, etc)
@@ -102,7 +104,7 @@ namespace sd{
           It never traverses a marked node, instead it removes them.
           Every predecessor's value is strictly less than val.
          */
-	bool _find(V val,shared_ptr* succs, shared_ptr* preds){
+	bool _find(V val,shared_ptr* preds, shared_ptr* succs){
             bool marked = false;
             bool snip;
             shared_ptr pred,succ,curr;
@@ -115,20 +117,20 @@ namespace sd{
                 for(int level=H-1;level>=0;level--){
                     //TODO------------------------------error here
                     //returns null for head->tail get
-                    curr = pred->next[level].get_ref();
+                    curr = pred->next[level]->get_ref();
                     //curr = pred->next[level].get_pair()->first;
                     //look on this level for the right pred
                     while(true){
-                        succ = curr->next[level].get(marked);
+                        succ = curr->next[level]->get(marked);
                         //if marked, remove it
                         while(marked){
-                            snip = pred->next[level].
+                            snip = pred->next[level]->
                                 compare_and_set(curr,false,succ,false);
                             //if we didnt snip it, something disapeared so start over.
                             //goto is merely used to escape the nested loop
                             if(!snip) goto retry;
-                            curr = pred->next[level].get(throwaway);
-                            succ = pred->next[level].get(marked);
+                            curr = pred->next[level]->get(throwaway);
+                            succ = pred->next[level]->get(marked);
                         }
                         //if we've reached the tail, then we have our pred
                         if(curr == tail)
@@ -168,7 +170,7 @@ namespace sd{
 	    for(int i=0;i<head->top_level;i++){
 		//set new value
 		//head.next[i] =  new std::pair<node*,bool>(&tail,false);
-		head->next[i] = marked_node(tail,false); 
+		head->next[i] = marked_ptr(new marked_node(tail,false)); 
                     
 	    }
 	}
@@ -192,7 +194,7 @@ namespace sd{
                     //fill in succs for new node
                     for(int i=0;i<top_level;i++){
                         shared_ptr succ = succs[i];
-                        new_node->next[i] = marked_node(succ,false);
+                        new_node->next[i] = marked_ptr(new marked_node(succ,false));
                     }
                     //first do the bottom level insertion
                     shared_ptr succ = succs[0];
@@ -200,7 +202,7 @@ namespace sd{
                     //redundant line
                     //new_node->next[0] = marked_node(succ,false);
 
-                    if(!pred->next[0].compare_and_set(succ,false,new_node,false)){
+                    if(!pred->next[0]->compare_and_set(succ,false,new_node,false)){
                         //if we the pred changed on us, try again from the start
                         continue;
                     }
@@ -210,7 +212,7 @@ namespace sd{
                         while(true){
                             succ = succs[l];
                             pred = preds[l];
-                            if(pred->next[l].compare_and_set(succ,false,
+                            if(pred->next[l]->compare_and_set(succ,false,
                                                              new_node,false))
                                 break;
                             //if the preds or succs changed, re-find them
@@ -248,22 +250,22 @@ namespace sd{
                     for(int i = node_to_remove->top_level-1;i>0;i--){
                         bool marked = false;
                         //make sure successor is marked (by any thread)
-                        succ = node_to_remove->next[i].get(marked);
+                        succ = node_to_remove->next[i]->get(marked);
                         while(!marked){
-                            node_to_remove->next[i].
+                            node_to_remove->next[i]->
                                 compare_and_set(succ,false,succ,true);
-                            succ = node_to_remove->next[i].get(marked);
+                            succ = node_to_remove->next[i]->get(marked);
                         }
 
                     }
                     //now mark it at level 0
                     bool marked = false;
-                    succ = node_to_remove->next[0].get(marked);
+                    succ = node_to_remove->next[0]->get(marked);
                     //keep going until either I mark it or another thread does
                     while(true){
-                        bool i_marked = node_to_remove->next[0].
+                        bool i_marked = node_to_remove->next[0]->
                             compare_and_set(succ,false,succ,true);
-                        succ = node_to_remove->next[0].get(marked);
+                        succ = node_to_remove->next[0]->get(marked);
                         //return whether I marked it or someone else did
                         if(i_marked){
                             //optimization to remove nodes
@@ -291,16 +293,16 @@ namespace sd{
             bool throwaway;
             //search top-down, but make sure it is not marked on the bottom level
             for(int level = H-1;level>=0;level--){
-                curr = pred->next[level].get(throwaway);
+                curr = pred->next[level]->get(throwaway);
                 //traverse level
                 while(true){
-                    succ = curr->next[level].get(marked);
+                    succ = curr->next[level]->get(marked);
                     while(marked){
                         //jump over marked nodes
                         //TODO is book wrong here? I think so
                         //curr = pred->next[level].get(throwaway);
-                        curr = curr->next[level].get(throwaway);
-                        succ = curr->next[level].get(marked);
+                        curr = curr->next[level]->get(throwaway);
+                        succ = curr->next[level]->get(marked);
                     }
                     //if curr is tail, then we have found our pred and curr
                     if(curr == tail)

@@ -62,20 +62,27 @@ int main(){
     assert(!p2);
     assert(!mark);
 
+    //test shared_ptr arrays
+    boost::shared_ptr<int> i_ptr(new int(5));
+    boost::shared_ptr<int> ptrs[5];
+    ptrs[0] = i_ptr;
+    ptrs[1] = i_ptr;
+
+    assert(ptrs[0] == i_ptr);
+    assert(ptrs[0] == ptrs[1]);
+    assert( *ptrs[0] == 5);
 
     //test on array
-    amr::shared_ptr x(new std::string());
-    amr* arr[3];
-    amr* x1 = new amr(x,false);
+    amr::shared_ptr s_ptr(new std::string("h"));
+    boost::shared_ptr<amr> a_ptr(new amr(s_ptr,false));
+
+    boost::shared_ptr<amr> ptr_arr[5];
+    ptr_arr[0] = a_ptr;
+    ptr_arr[1] = a_ptr;
+
+    assert(ptr_arr[0] == a_ptr);
+    assert( ptr_arr[0]->get_ref() == s_ptr  );
     
-    arr[0] = x1;
-    arr[1] = x1;
-    
-
-    assert(arr[0]->get_ref() == x);
-
-    delete x1;
-
     std::cout << "tests passed" << std::endl;
     
     return 0;

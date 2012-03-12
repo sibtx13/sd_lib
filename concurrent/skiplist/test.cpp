@@ -4,9 +4,9 @@
 
 int main(){
 
-    std::cout << "Hello\n";
+    std::cout << "starting testing...\n";
 
-    
+    /*
     std::pair<bool,bool>* i = new std::pair<bool,bool>(false,false);
     std::pair<bool,bool>* j = new std::pair<bool,bool>(true,true);
     
@@ -20,10 +20,23 @@ int main(){
     std::cout << swap << " " << (**m).first << std::endl;
 
     
+    */
     
-    sd::lock_free_skiplist<int,33> lfs;
+    sd::lock_free_skiplist<int,5> lfs;
 
     lfs.add(5);
-    
+    std::cout << "element added" << std::endl;
+    bool done = lfs.contains(5);
+
+    assert(done);
+
+    lfs.remove(5);
+    done = lfs.contains(5);
+
+    assert(!done);
+
+
+    std::cout << "test done" << std::endl;
+
     return 0;
 }
