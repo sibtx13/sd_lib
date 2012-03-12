@@ -113,7 +113,7 @@ namespace sd{
                 pred = head;
                 //travel from the top level to the bottom to get expected logn search
                 for(int level=H-1;level>=0;level--){
-                    //TODO------------------------------error here
+                    
                     //returns null for head->tail get
                     curr = pred->next[level]->get_ref();
                     //curr = pred->next[level].get_pair()->first;
@@ -167,8 +167,8 @@ namespace sd{
 	    //init head's next to tail
 	    for(int i=0;i<head->top_level;i++){
 		//set new value
-		//head.next[i] =  new std::pair<node*,bool>(&tail,false);
-		head->next[i] = marked_ptr(new marked_node(tail,false)); 
+		//head->next[i] = marked_ptr(new marked_node(tail,false)); 
+                head->next[i]->set(tail,false);
                     
 	    }
 	}
@@ -192,7 +192,8 @@ namespace sd{
                     //fill in succs for new node
                     for(int i=0;i<top_level;i++){
                         shared_ptr succ = succs[i];
-                        new_node->next[i] = marked_ptr(new marked_node(succ,false));
+                        //new_node->next[i] = marked_ptr(new marked_node(succ,false));
+                        new_node->next[i]->set(succ,false);
                     }
                     //first do the bottom level insertion
                     shared_ptr succ = succs[0];

@@ -52,6 +52,16 @@ public:
     }
 
     /*
+      A convinience function. It is not atomic or thread-safe, so should only be called
+      when owned by only 1 thread. Otherwise use compare_and_set
+     */
+    void set(shared_ptr new_val, bool new_mark){
+        ref_pair* p = get_pair();
+        p->first = new_val;
+        p->second = new_mark;
+    }
+
+    /*
       Performs an atomic compare and set on both fields val and mark.
       The old_pair must be exactly equal (i.e. strictly the same reference object)
       for the swap to work. The reference can be gotten from get_pair().

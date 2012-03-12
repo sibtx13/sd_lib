@@ -22,7 +22,7 @@ int main(){
     
     */
     
-    sd::lock_free_skiplist<int,5> lfs;
+    sd::lock_free_skiplist<int,10> lfs;
 
     lfs.add(5);
     std::cout << "element added" << std::endl;
