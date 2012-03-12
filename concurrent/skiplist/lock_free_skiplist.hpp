@@ -15,20 +15,21 @@ namespace sd{
     class lock_free_skiplist
     {
     private:
-        typedef boost::shared_ptr<V> shared_ptr;
-	
+        	
         struct node{
             V value;
-            std::pair<node*,bool>** next;
+	    //an array of shared_ptrs of node*,bool pairs
+	    boost::shared_ptr<std::pair<node*,bool> >* next;
             int top_level;
             //constructor for sentinels
             node(){
                 top_level = H;
                 //value = NULL;
-                next = new std::pair<node*,bool>*[H];
+                next = new boost::shared_ptr<std::pair<node*,bool> >[H];
                 
                 for(int i=0;i<H;i++){
-                    next[i] = new std::pair<node*,bool>(NULL,false);
+                    next[i] = boost::shared_ptr<std::pair<node*,bool> >
+			(new std::pair<node*,bool>(NULL,false));
                 }
             }
          
@@ -42,6 +43,14 @@ namespace sd{
                 for(int i=0;i<top_level;i++){
                     next[i] = new std::pair<node*,bool>(NULL,false);
                 }
+		
+		next = new boost::shared_ptr<std::pair<node*,bool> >[top_level];
+                
+                for(int i=0;i<top_level;i++){
+                    next[i] = boost::shared_ptr<std::pair<node*,bool> >
+			(new std::pair<node*,bool>(NULL,false));
+                }
+
 	    }
 
 	    //destructor
@@ -53,6 +62,8 @@ namespace sd{
 
 	
 	typedef std::pair<node*,bool> marked_node;
+	typedef boost::shared_ptr<marked_node> shared_m_node;
+
 	node head,tail;
 	//the probability of a node existing at level 1 (squared for level 2, etc)
 	double prob_level;
@@ -84,10 +95,9 @@ namespace sd{
 
 	    //init head's next to tail
 	    for(int i=0;i<head.top_level;i++){
-		//first delete old value
-		delete head.next[i];
 		//set new value
-		head.next[i] =  new std::pair<node*,bool>(&tail,false);
+		//head.next[i] =  new std::pair<node*,bool>(&tail,false);
+		head.next[i] =  shared_m_node(new marked_node(&tail,false));
 	    }
 	}
 	
@@ -113,10 +123,10 @@ namespace sd{
 		    //set the next ptrs of the new node to successors
 		    for(int l=0;l<top_level;l++){
 			node* succ = succs[l];
-			//get rid of old value first
-			delete new_node->next[l];
+			
 			//set new value
-			new_node->next[l] = new marked_node(succ,false);
+			//new_node->next[l] = new marked_node(succ,false);
+			new_node->next[l] =  shared_m_node(new marked_node(succ,false));
 		    }
 		    //bottom level pred and succ, since we work our way up
 		    node* succ = succs[0];
@@ -124,16 +134,16 @@ namespace sd{
 		    //try to set bottom atomically
 		    //CAS works because we treat marked_nodes as immutables
 		    //first check that succ is not marked
-		    marked_node* m_succ = pred->next[0];
+		    marked_node* m_succ = pred->next[0].get();
 		    if(m_succ->second ||  !__sync_bool_compare_and_swap(
-						     &pred->next[0],
-						     m_succ,
-						     new marked_node(new_node,false))
+									pred->next[0],
+									m_succ,
+									new marked_node(new_node,false))
 		       ){
 			//if not, try again
 			continue;
 		    }
-		    //we can get rid of old edge
+		    //we can get rid of old edge, its been replaced
 		    delete m_succ;
 		 
 		    //now take care of the higher levels
@@ -143,11 +153,11 @@ namespace sd{
 			    succ = succs[level];
 			    pred = preds[level];
 			    //attempt to set level atomically
-			    marked_node* m_succ = pred->next[level];
+			    marked_node* m_succ = pred->next[level].get();
 			    if(!m_succ->second && __sync_bool_compare_and_swap(
-							     &pred->next[level],
-							     m_succ,
-							     new marked_node(new_node,false))
+									       &pred->next[level].get(),
+									       m_succ,
+									       new marked_node(new_node,false))
 			       ){
 				//we can get rid of old edge
 				delete m_succ;

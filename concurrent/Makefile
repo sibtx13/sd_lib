@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS= -Wall -o
 SOURCES= test.cpp
-EXECUTABLE= skiplist
+EXECUTABLE= atomic_test
 INCFLAGS	=	-I /usr/local/boost_1_49_0
 LINKFLAGS	=	-lpthread -ggdb -lrt
 
