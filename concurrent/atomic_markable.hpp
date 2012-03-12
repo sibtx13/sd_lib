@@ -47,6 +47,10 @@ public:
 	return *marked_pair;
     }
 
+    shared_ptr get_ref(){
+        return get_pair()->first;
+    }
+
     /*
       Performs an atomic compare and set on both fields val and mark.
       The old_pair must be exactly equal (i.e. strictly the same reference object)

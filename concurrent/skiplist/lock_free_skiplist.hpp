@@ -2,6 +2,7 @@
 #define LOCK_FREE_SKIPLIST_H
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
@@ -10,7 +11,7 @@
 
 namespace sd{
 
-    template< typename V , int H>
+    template< typename V>
     class node
     {
     public:
@@ -18,21 +19,29 @@ namespace sd{
         //an array of atomic_markable nodes
         atomic_markable_reference<node>* next;
         int top_level;
+        boost::shared_ptr<node> null;
+        //empty constructor for containers and shared_ptr
+        node(){}
+
         //constructor for sentinels
-        node(){
-            top_level = H;
+        node(int height):
+            null(new node())
+        {
+            top_level = height;
             //value = NULL;
-            next = new atomic_markable_reference<node>[H];
+            next = new atomic_markable_reference<node>[top_level];
                 
-            for(int i=0;i<H;i++){
+            for(int i=0;i<top_level;i++){
                 //null reference
-                boost::shared_ptr<node> null;
+                //boost::shared_ptr<node> null(new node());
                 next[i] = atomic_markable_reference<node > (null,false);
             }
+            
         }
          
         //constructor for inner nodes
-        node(V val , int height){
+        node(V val , int height)
+        {
             value = val;
             top_level = height;
             //TODO might want to make sure that height is less than H
@@ -51,7 +60,8 @@ namespace sd{
         //destructor
         ~node(){
             //TODO check for memory leak, will have to delete entries separately
-            delete next;
+            if(next)
+                delete next;
         }
 
     };
@@ -66,7 +76,7 @@ namespace sd{
     {
     private:
         
-        typedef typename sd::node<V,H> node_t;
+        typedef typename sd::node<V> node_t;
 	typedef  atomic_markable_reference<node_t> marked_node;
 	typedef typename boost::shared_ptr<node_t> shared_ptr;
         typedef typename marked_node::ref_pair ref_pair;
@@ -103,7 +113,10 @@ namespace sd{
                 pred = head;
                 //travel from the top level to the bottom to get expected logn search
                 for(int level=H-1;level>=0;level--){
-                    curr = pred->next[level].get(throwaway);
+                    //TODO------------------------------error here
+                    //returns null for head->tail get
+                    curr = pred->next[level].get_ref();
+                    //curr = pred->next[level].get_pair()->first;
                     //look on this level for the right pred
                     while(true){
                         succ = curr->next[level].get(marked);
@@ -144,8 +157,8 @@ namespace sd{
 
     public:
 	lock_free_skiplist():
-	    head(new node_t()),
-	    tail(new node_t()),
+	    head(new node_t(H)),
+	    tail(new node_t(H)),
 	    prob_level(0.5)
 	{
 	    //seed random
