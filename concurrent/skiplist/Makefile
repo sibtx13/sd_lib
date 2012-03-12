@@ -3,7 +3,7 @@ CFLAGS= -Wall -o
 SOURCES= test.cpp
 EXECUTABLE= skiplist
 INCFLAGS	=	-I /usr/local/boost_1_49_0
-LINKFLAGS	=	-lpthread -ggdb -lrt
+LINKFLAGS	=	-lpthread -ggdb -lrt #-std=c++0x
 
 .PHONY: all $(EXECUTABLE)
 

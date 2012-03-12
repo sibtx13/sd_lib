@@ -40,7 +40,12 @@ int main(){
     bool mark = true;
     amr::shared_ptr s3 = a.get(mark);
     assert( !mark && s3 == s2);
-    
+
+    //test convinience compare and set
+    done = a.compare_and_set(s2,false,s1,true);
+    assert(done);
+    rp = a.get_pair();
+    assert(rp->first ==s1 && rp->second == true );
 
     std::cout << "tests passed" << std::endl;
     

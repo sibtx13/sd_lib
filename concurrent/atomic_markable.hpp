@@ -17,8 +17,8 @@ template <typename T>
 class atomic_markable_reference{
 
 public:
-    typedef boost::shared_ptr<T> shared_ptr;
-    typedef std::pair<shared_ptr ,bool> ref_pair;
+    typedef typename boost::shared_ptr<T> shared_ptr;
+    typedef typename std::pair<shared_ptr ,bool> ref_pair;
 
 private:
     //extra level of indirection so we can do compare and swap on ptrs
@@ -30,6 +30,11 @@ public:
 	marked_pair = (ref_pair**) malloc(sizeof(ref_pair*));
 	ref_pair* rp = new ref_pair(val,mark);
 	*marked_pair = rp;
+    }
+    //only for use by containers and arrays
+    atomic_markable_reference(){
+	marked_pair = (ref_pair**) malloc(sizeof(ref_pair*));
+	
     }
 
     ~atomic_markable_reference(){
@@ -67,8 +72,24 @@ public:
 
     }
 
-    
+    /*
+      A convinience function for above. This function works atomically
+      if *marked_pair is treated as immutable
+     */
+    bool compare_and_set(shared_ptr old_val, bool old_mark, 
+                         shared_ptr new_val, bool new_mark){
+        //get old pair and make sure its values match old value and old mark
+        ref_pair* old_pair = get_pair();
+        if( old_pair->first != old_val || old_pair->second != old_mark)
+            return false;
+        return compare_and_set(old_pair,new_val,new_mark);
+        
+    }
 
+    /*
+      attempts to set the mark to new_mark atomically iff val is
+      equal to expected_val
+     */
     bool attempt_mark(shared_ptr expected_val, bool new_mark){
 	ref_pair* old_pair = get_pair();
 	

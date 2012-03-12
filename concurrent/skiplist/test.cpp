@@ -20,10 +20,10 @@ int main(){
     std::cout << swap << " " << (**m).first << std::endl;
 
     
-    /*
+    
     sd::lock_free_skiplist<int,33> lfs;
 
     lfs.add(5);
-    */
+    
     return 0;
 }
