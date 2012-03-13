@@ -71,7 +71,7 @@ public:
       If call works, caller shoudl delete old_pair.
      */
     bool compare_and_set(pair_ptr old_pair, shared_ptr new_val, bool new_mark){
-	
+        //TODO should probably do this with boost::make_shared to be more efficient
 	pair_ptr new_pair(new ref_pair(new_val,new_mark));
 	
 	if(__sync_bool_compare_and_swap(
