@@ -120,6 +120,9 @@ public:
      */
     shared_ptr get(bool &_mark){
 	ref_pair* old_pair = get_pair();
+        //if null, return null shared_ptr
+        //if(!old_pair)
+        //    return shared_ptr();
 	_mark = old_pair->second;
 	return old_pair->first;
     }

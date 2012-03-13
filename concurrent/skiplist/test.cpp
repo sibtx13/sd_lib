@@ -15,12 +15,12 @@ int main(){
     bool done = lfs.contains(5);
 
     assert(done);
-
+    assert(lfs.size()==1);
     lfs.remove(5);
     done = lfs.contains(5);
 
     assert(!done);
-
+    assert(lfs.size()==0);
 
     std::cout << "test done" << std::endl;
 

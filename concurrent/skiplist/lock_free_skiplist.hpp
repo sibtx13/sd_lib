@@ -84,6 +84,8 @@ namespace sd{
 	shared_ptr head,tail;
 	//the probability of a node existing at level 1 (squared for level 2, etc)
 	double prob_level;
+        // the size of the bottom list
+        std::size_t _size;
 
 	//this function computes the top level for a new node
 	int _random_level(){
@@ -159,7 +161,8 @@ namespace sd{
 	lock_free_skiplist():
 	    head(new node_t(H)),
 	    tail(new node_t(H)),
-	    prob_level(0.5)
+	    prob_level(0.5),
+            _size(0)
 	{
 	    //seed random
 	    srand ( time(NULL) );
@@ -219,6 +222,8 @@ namespace sd{
                         }
                     }
                     //we've inserted the node at all of its levels
+                    //atomically increment size
+                    __sync_fetch_and_add(&_size,1);
                     return true;
                 }
 
@@ -269,6 +274,8 @@ namespace sd{
                         if(i_marked){
                             //optimization to remove nodes
                             _find(val,preds,succs);
+                            //atomically decrement size
+                            __sync_fetch_and_sub(&_size,1);
                             return true;
                         }else if(marked){
                             //means someone else marked it
@@ -297,6 +304,7 @@ namespace sd{
                 while(true){
                     marked_ptr p = curr->next[level];
                     succ = curr->next[level]->get(marked);
+                    
                     while(marked){
                         //jump over marked nodes
                         //TODO is book wrong here? I think so
@@ -323,9 +331,13 @@ namespace sd{
             return curr->value == val;
         } //contains
 
+        std::size_t size(){
+            return __sync_fetch_and_sub(&_size,0);
+        }
 
     };
 
+    
 
 } // namespace sd
 #endif /* LOCK_FREE_SKIPLIST_H */

@@ -8,7 +8,7 @@
 typedef typename sd::lock_free_skiplist<int,32> skiplist;
 
 // creates n random values between 1-100,000
-void creator(skiplist lfs , int n){
+void creator(skiplist* lfs , int n){
     
     for(int i=0;i<n;i++){
         
@@ -16,7 +16,8 @@ void creator(skiplist lfs , int n){
         while(!added)
         {
             int x = rand() % 100000;
-            added = lfs.add(x);    
+            added = lfs->add(x);
+            //std::cout << lfs->size() << std::endl;
         }
     }
     
@@ -24,14 +25,14 @@ void creator(skiplist lfs , int n){
 }
 
 //removes n values between 1-100,000
-void remover(skiplist lfs , int n){
+void remover(skiplist* lfs , int n){
 
     int count = 0;
     int val = 0;
     while(count < n){
-        if(lfs.contains(val))
+        if(lfs->contains(val))
         {
-            if(lfs.remove(val))
+            if(lfs->remove(val))
                 count++;
 
         }
@@ -56,24 +57,29 @@ int main(){
     //create 10 threads of 100
     for (int i=0;i<10;i++)
     {
-        threads.create_thread(boost::bind(creator , lfs, 100));
+        threads.create_thread(boost::bind(creator , &lfs, 100));
         //boost::thread* t = new boost::thread(creator,lfs,100);
         //threads.add_thread(t);
     }
     //wait for it
     std::cout << "waiting for them to finish... " << std::endl;
     threads.join_all();
+    std::cout << lfs.size() << std::endl;
+    assert(lfs.size() == 100*10);
+
     std::cout << "starting remover threads " << std::endl;
     //create 10 threads of 100 to remove
     for (int i=0;i<10;i++)
     {
-        threads.create_thread(boost::bind(remover , lfs, 100));
+        threads.create_thread(boost::bind(remover , &lfs, 100));
         //boost::thread* t = new boost::thread(remover,lfs,100);
         //threads.add_thread(t);
     }     
    
     std::cout << "waiting for them to finish... " << std::endl;
     threads.join_all();
+
+    assert(lfs.size() == 0);
 
     std::cout << "test done" << std::endl;
 
