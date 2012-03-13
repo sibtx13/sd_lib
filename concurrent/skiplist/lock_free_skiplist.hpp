@@ -17,7 +17,7 @@ namespace sd{
     public:
         V value;
         //an array of atomic_markable nodes
-        boost::shared_ptr<atomic_markable_reference<node> > next[H];
+        boost::shared_ptr<atomic_markable_reference<node> > next[H+1];
         int top_level;
         boost::shared_ptr<node> null;
         //empty constructor for containers and shared_ptr
@@ -31,7 +31,7 @@ namespace sd{
             //value = NULL;
             //next = new boost::shared_ptr<atomic_markable_reference<node> > [top_level];
                 
-            for(int i=0;i<top_level;i++){
+            for(int i=0;i<=top_level;i++){
                 //null reference
                 //boost::shared_ptr<node> null(new node());
                 next[i] = boost::shared_ptr<atomic_markable_reference<node> >(new atomic_markable_reference<node > (null,false));
@@ -47,7 +47,7 @@ namespace sd{
             top_level = height;
             //TODO might want to make sure that height is less than H
             //next = new boost::shared_ptr<atomic_markable_reference<node> > [top_level];
-            for(int i=0;i<top_level;i++){
+            for(int i=0;i<=top_level;i++){
                     
                 //null reference
                 //boost::shared_ptr<node> null;
@@ -70,7 +70,7 @@ namespace sd{
     /*an implementation for a lock_free_skiplist based on
     Herlihy, Lev, and Shavit.
     */
-    template< typename V , int H = 33>
+    template< typename V , int H = 32>
     class lock_free_skiplist
     {
     private:
@@ -88,7 +88,7 @@ namespace sd{
 	//this function computes the top level for a new node
 	int _random_level(){
 	    int level;
-	    for(level=0;level<H;level++){
+	    for(level=0;level<=H;level++){
 		double r =((double)rand()/(double)RAND_MAX);
 		if(r < prob_level)
 		    break;
@@ -112,7 +112,7 @@ namespace sd{
             while(true){
                 pred = head;
                 //travel from the top level to the bottom to get expected logn search
-                for(int level=H-1;level>=0;level--){
+                for(int level=H;level>=0;level--){
                     
                     //returns null for head->tail get
                     curr = pred->next[level]->get_ref();
@@ -165,7 +165,7 @@ namespace sd{
 	    srand ( time(NULL) );
 
 	    //init head's next to tail
-	    for(int i=0;i<head->top_level;i++){
+	    for(int i=0;i<=head->top_level;i++){
 		//set new value
 		//head->next[i] = marked_ptr(new marked_node(tail,false)); 
                 head->next[i]->set(tail,false);
@@ -179,8 +179,8 @@ namespace sd{
 	bool add(V val){
             int top_level = _random_level();
             //for the find call
-            shared_ptr preds[H];
-            shared_ptr succs[H];
+            shared_ptr preds[H+1];
+            shared_ptr succs[H+1];
             //keep trying to insert until we insert or node exists due to another thread
             while(true){
                 bool found = _find(val,preds,succs);
@@ -190,7 +190,7 @@ namespace sd{
                 else{
                     shared_ptr new_node(new node_t(val,top_level));
                     //fill in succs for new node
-                    for(int i=0;i<top_level;i++){
+                    for(int i=0;i<=top_level;i++){
                         shared_ptr succ = succs[i];
                         //new_node->next[i] = marked_ptr(new marked_node(succ,false));
                         new_node->next[i]->set(succ,false);
@@ -206,7 +206,7 @@ namespace sd{
                         continue;
                     }
                     //now that we have the bottom level, do the rest
-                    for(int l=1;l<new_node->top_level;l++){
+                    for(int l=1;l<=new_node->top_level;l++){
                         //keep going until we insert the node at the other levels
                         while(true){
                             succ = succs[l];
@@ -233,8 +233,8 @@ namespace sd{
 	bool remove(V val){
             
             //for the find call
-            shared_ptr preds[H];
-            shared_ptr succs[H];            
+            shared_ptr preds[H+1];
+            shared_ptr succs[H+1];            
             shared_ptr succ;
 
             //keep trying until either we mark it or another thread does
@@ -246,7 +246,7 @@ namespace sd{
                 else{
                     shared_ptr node_to_remove = succs[0];
                     //mark it at every level top-down except for level 0
-                    for(int i = node_to_remove->top_level-1;i>0;i--){
+                    for(int i = node_to_remove->top_level;i>0;i--){
                         bool marked = false;
                         //make sure successor is marked (by any thread)
                         succ = node_to_remove->next[i]->get(marked);
@@ -291,7 +291,7 @@ namespace sd{
             shared_ptr curr,succ;
             bool throwaway;
             //search top-down, but make sure it is not marked on the bottom level
-            for(int level = H-1;level>=0;level--){
+            for(int level = H;level>=0;level--){
                 curr = pred->next[level]->get(throwaway);
                 //traverse level
                 while(true){
