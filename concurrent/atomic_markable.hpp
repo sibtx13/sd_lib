@@ -19,17 +19,20 @@ class atomic_markable_reference{
 public:
     typedef typename boost::shared_ptr<T> shared_ptr;
     typedef typename std::pair<shared_ptr ,bool> ref_pair;
+    typedef typename boost::shared_ptr<ref_pair> pair_ptr;
 
 private:
     //extra level of indirection so we can do compare and swap on ptrs
     ref_pair** marked_pair;
-    
+    pair_ptr curr;
+
 public:
     
     atomic_markable_reference(shared_ptr val, bool mark){
 	marked_pair = (ref_pair**) malloc(sizeof(ref_pair*));
-	ref_pair* rp = new ref_pair(val,mark);
-	*marked_pair = rp;
+	//ref_pair* rp = new ref_pair(val,mark);
+        curr = pair_ptr(new ref_pair(val,mark));
+	*marked_pair = curr.get();
     }
     //only for use by containers and arrays
     atomic_markable_reference(){
@@ -39,12 +42,12 @@ public:
 
     ~atomic_markable_reference(){
         //clean up malloc
-        delete *marked_pair;
+        //delete *marked_pair;
         free (marked_pair);
     }
 
-    ref_pair* get_pair(){
-	return *marked_pair;
+    pair_ptr get_pair(){
+	return curr;
     }
 
     shared_ptr get_ref(){
@@ -56,7 +59,7 @@ public:
       when owned by only 1 thread. Otherwise use compare_and_set
      */
     void set(shared_ptr new_val, bool new_mark){
-        ref_pair* p = get_pair();
+        pair_ptr p = get_pair();
         p->first = new_val;
         p->second = new_mark;
     }
@@ -67,21 +70,21 @@ public:
       for the swap to work. The reference can be gotten from get_pair().
       If call works, caller shoudl delete old_pair.
      */
-    bool compare_and_set(ref_pair* old_pair, shared_ptr new_val, bool new_mark){
+    bool compare_and_set(pair_ptr old_pair, shared_ptr new_val, bool new_mark){
 	
-	ref_pair* new_pair = new ref_pair(new_val,new_mark);
+	pair_ptr new_pair(new ref_pair(new_val,new_mark));
 	
 	if(__sync_bool_compare_and_swap(
 					marked_pair,
-					old_pair,
-					new_pair))
+					old_pair.get(),
+					new_pair.get()))
 	    {
 		//means it worked, so we can delete old_pair and return true
-                delete old_pair;
+                curr = new_pair;
 		return true;
 	    }
 	//get rid of new_pair and return false
-	delete new_pair;
+	//delete new_pair;
 	return false;
 
     }
@@ -93,7 +96,7 @@ public:
     bool compare_and_set(shared_ptr old_val, bool old_mark, 
                          shared_ptr new_val, bool new_mark){
         //get old pair and make sure its values match old value and old mark
-        ref_pair* old_pair = get_pair();
+        pair_ptr old_pair = get_pair();
         if( old_pair->first != old_val || old_pair->second != old_mark)
             return false;
         return compare_and_set(old_pair,new_val,new_mark);
@@ -105,7 +108,7 @@ public:
       equal to expected_val
      */
     bool attempt_mark(shared_ptr expected_val, bool new_mark){
-	ref_pair* old_pair = get_pair();
+	pair_ptr old_pair = get_pair();
 	
 	//make sure it conforms to input
 	if(old_pair->first !=  expected_val)
@@ -119,7 +122,7 @@ public:
       This is just to conform to the inteface, get_pair is better
      */
     shared_ptr get(bool &_mark){
-	ref_pair* old_pair = get_pair();
+	pair_ptr old_pair = get_pair();
         //if null, return null shared_ptr
         //if(!old_pair)
         //    return shared_ptr();
@@ -127,7 +130,7 @@ public:
 	return old_pair->first;
     }
 
-
+    
 
 
 

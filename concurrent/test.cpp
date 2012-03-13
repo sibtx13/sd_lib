@@ -6,7 +6,7 @@
 int main(){
 
     typedef atomic_markable_reference<std::string> amr;
-
+    typedef amr::pair_ptr pair_ptr;
 
     std::cout << "starting testing...\n";
     
@@ -20,7 +20,7 @@ int main(){
     amr a(s1,false);
     
     //make sure initial values are right
-    amr::ref_pair* rp = a.get_pair();
+    pair_ptr rp = a.get_pair();
     assert(rp->first==s1 && rp->second == false );
 
     bool done = a.compare_and_set(rp,s2,true);

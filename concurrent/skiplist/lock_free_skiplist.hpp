@@ -104,7 +104,7 @@ namespace sd{
           It never traverses a marked node, instead it removes them.
           Every predecessor's value is strictly less than val.
          */
-	bool _find(V val,shared_ptr* preds, shared_ptr* succs){
+	bool _find2(V val,shared_ptr* preds, shared_ptr* succs){
             bool marked = false;
             bool snip;
             shared_ptr pred,succ,curr;
@@ -130,7 +130,7 @@ namespace sd{
                             //goto is merely used to escape the nested loop
                             if(!snip) goto retry;
                             curr = pred->next[level]->get(throwaway);
-                            succ = pred->next[level]->get(marked);
+                            succ = curr->next[level]->get(marked);
                         }
                         //if we've reached the tail, then we have our pred
                         if(curr == tail)
@@ -154,7 +154,57 @@ namespace sd{
 
             }
 	    
-	}
+	} // _find
+
+        /*
+          same as above, but doesnt actually remove nodes
+         */
+	bool _find(V val,shared_ptr* preds, shared_ptr* succs){
+            bool marked = false;
+            
+            shared_ptr pred,succ,curr;
+            bool throwaway;
+            
+            while(true){
+                pred = head;
+                //travel from the top level to the bottom to get expected logn search
+                for(int level=H;level>=0;level--){
+                    
+                    //returns null for head->tail get
+                    curr = pred->next[level]->get_ref();
+                    //curr = pred->next[level].get_pair()->first;
+                    //look on this level for the right pred
+                    while(true){
+                        succ = curr->next[level]->get(marked);
+                        
+                        while(marked){
+                            //if marked, skip over it
+                            curr = curr->next[level]->get(throwaway);
+                            succ = curr->next[level]->get(marked);
+                        }
+                        //if we've reached the tail, then we have our pred
+                        if(curr == tail)
+                            break;
+                        //else if we're at the head or curr's value is 
+                        //less than val, then update pred and succ
+                        else if(curr == head || curr->value < val){
+                            pred = curr;
+                            curr = succ;
+                        }else{
+                            //else we have found this level's pred and succ
+                            break;
+                        }
+                    }
+                    //update the pred and succ for this level
+                    preds[level] = pred;
+                    succs[level] = curr;
+
+                }
+                return curr->value == val;
+
+            }
+	    
+	} // _find
 
 
     public:
