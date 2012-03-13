@@ -3,7 +3,7 @@ CFLAGS= -Wall -o
 SOURCES= test.cpp
 EXECUTABLE= test p_test
 INCFLAGS	=	-I /usr/local/boost_1_49_0
-LINKFLAGS	=	-lpthread -ggdb -lrt #-std=c++0x
+LINKFLAGS	=	-lpthread -ggdb -lrt /usr/local/lib/libboost_thread.a
 
 .PHONY: all $(EXECUTABLE)
 

@@ -6,23 +6,9 @@ int main(){
 
     std::cout << "starting testing...\n";
 
-    /*
-    std::pair<bool,bool>* i = new std::pair<bool,bool>(false,false);
-    std::pair<bool,bool>* j = new std::pair<bool,bool>(true,true);
-    
-
-    std::pair<bool,bool>** m = &i;
-
-    std::cout << (**m).first << std::endl;
-
-    bool swap = __sync_bool_compare_and_swap(m,i,j);
-
-    std::cout << swap << " " << (**m).first << std::endl;
 
     
-    */
-    
-    sd::lock_free_skiplist<int,10> lfs;
+    sd::lock_free_skiplist<int,32> lfs;
 
     lfs.add(5);
     std::cout << "element added" << std::endl;

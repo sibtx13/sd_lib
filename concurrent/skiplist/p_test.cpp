@@ -2,18 +2,44 @@
 #include <iostream>
 #include "lock_free_skiplist.hpp"
 #include <stdlib.h>
+#include <boost/thread.hpp>
 
-typedef typename sd::lock_free_skiplist<int,10> skiplist;
 
-// creates 10 random values between 1-1000
-void creator(skiplist lfs){
+typedef typename sd::lock_free_skiplist<int,32> skiplist;
 
+// creates n random values between 1-100,000
+void creator(skiplist lfs , int n){
+    
+    for(int i=0;i<n;i++){
+        
+        bool added = false;
+        while(!added)
+        {
+            int x = rand() % 100000;
+            added = lfs.add(x);    
+        }
+    }
     
 
 }
 
-//removes 10 values between 1-1000
-void remover(skiplist lfs){
+//removes n values between 1-100,000
+void remover(skiplist lfs , int n){
+
+    int count = 0;
+    int val = 0;
+    while(count < n){
+        if(lfs.contains(val))
+        {
+            if(lfs.remove(val))
+                count++;
+
+        }
+        val++;
+        if(val > 100000)
+            break;
+
+    }
 
 }
 
@@ -22,19 +48,32 @@ int main(){
 
     std::cout << "starting testing...\n";
     srand( 0 );
+    std::cout << RAND_MAX << " is max random, should be > 100,000" << std::endl;
     skiplist lfs;
 
-    lfs.add(5);
-    std::cout << "element added" << std::endl;
-    bool done = lfs.contains(5);
-
-    assert(done);
-
-    lfs.remove(5);
-    done = lfs.contains(5);
-
-    assert(!done);
-
+    boost::thread_group threads;
+    std::cout << "starting creator threads " << std::endl;
+    //create 10 threads of 100
+    for (int i=0;i<10;i++)
+    {
+        threads.create_thread(boost::bind(creator , lfs, 100));
+        //boost::thread* t = new boost::thread(creator,lfs,100);
+        //threads.add_thread(t);
+    }
+    //wait for it
+    std::cout << "waiting for them to finish... " << std::endl;
+    threads.join_all();
+    std::cout << "starting remover threads " << std::endl;
+    //create 10 threads of 100 to remove
+    for (int i=0;i<10;i++)
+    {
+        threads.create_thread(boost::bind(remover , lfs, 100));
+        //boost::thread* t = new boost::thread(remover,lfs,100);
+        //threads.add_thread(t);
+    }     
+   
+    std::cout << "waiting for them to finish... " << std::endl;
+    threads.join_all();
 
     std::cout << "test done" << std::endl;
 
