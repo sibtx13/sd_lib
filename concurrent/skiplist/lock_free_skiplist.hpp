@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include "../atomic_markable.hpp"
-
+#include <boost/thread.hpp>
+//#include "../../include/gc.hh"
 
 namespace sd{
 
@@ -86,7 +87,7 @@ namespace sd{
 	double prob_level;
         // the size of the bottom list
         std::size_t _size;
-
+        boost::thread_specific_ptr<int> n;
 	//this function computes the top level for a new node
 	int _random_level(){
 	    int level;
@@ -104,7 +105,7 @@ namespace sd{
           It never traverses a marked node, instead it removes them.
           Every predecessor's value is strictly less than val.
          */
-	bool _find2(V val,shared_ptr* preds, shared_ptr* succs){
+	bool _find(V val,shared_ptr* preds, shared_ptr* succs){
             bool marked = false;
             bool snip;
             shared_ptr pred,succ,curr;
@@ -159,7 +160,7 @@ namespace sd{
         /*
           same as above, but doesnt actually remove nodes
          */
-	bool _find(V val,shared_ptr* preds, shared_ptr* succs){
+	bool _find2(V val,shared_ptr* preds, shared_ptr* succs){
             bool marked = false;
             
             shared_ptr pred,succ,curr;
@@ -208,7 +209,8 @@ namespace sd{
 
 
     public:
-	lock_free_skiplist():
+	
+        lock_free_skiplist():
 	    head(new node_t(H)),
 	    tail(new node_t(H)),
 	    prob_level(0.5),
@@ -216,7 +218,8 @@ namespace sd{
 	{
 	    //seed random
 	    srand ( time(NULL) );
-
+            //init gc
+            //scoped_gc_epoch e;
 	    //init head's next to tail
 	    for(int i=0;i<=head->top_level;i++){
 		//set new value
@@ -349,10 +352,15 @@ namespace sd{
             bool throwaway;
             //search top-down, but make sure it is not marked on the bottom level
             for(int level = H;level>=0;level--){
+                //TODO error here ----------------------
                 curr = pred->next[level]->get(throwaway);
+                marked_ptr p2 = curr->next[level];
+                //std::cout << curr->next[level] << " is curr's next\n";
                 //traverse level
                 while(true){
                     marked_ptr p = curr->next[level];
+                    //std::cout << p << " is curr's next (p)\n";
+                    //TODO or error here ----------------
                     succ = curr->next[level]->get(marked);
                     
                     while(marked){
